@@ -19,8 +19,8 @@ type WAL struct {
 	db *leveldb.DB
 }
 
-// New initializes a new WAL service with a LevelDB created at the given file path.
-// It is an error if the file path already exists.
+// New initializes a new WAL service with a LevelDB created at the given dir path.
+// It is an error if the dir path already exists.
 func New(path string) (*WAL, error) {
 	db, err := leveldb.OpenFile(path, nil)
 	if err != nil {

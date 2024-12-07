@@ -1,9 +1,13 @@
 package wal
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/require"
+	"math/rand"
 	"os"
+	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -165,4 +169,36 @@ func TestWal_EntriesBetween(t *testing.T) {
 		"c": []byte("value3"),
 	}
 	assert.Equal(t, want, got)
+}
+
+func generateData(numRecords int) map[string][]byte {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	data := make(map[string][]byte, numRecords)
+	for i := 0; i < numRecords; i++ {
+		val := make([]byte, 1024)
+		rnd.Read(val)
+		key := fmt.Sprintf("key_%d", i)
+		data[key] = val
+	}
+	return data
+}
+
+func BenchmarkWAL_Put(b *testing.B) {
+	data := generateData(1000)
+	walFile := path.Join(os.TempDir(), fmt.Sprintf("walbench_%d", time.Now().UnixNano()))
+	w, err := New(walFile)
+	require.NoError(b, err)
+	defer closeWAL(w)
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(walFile)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for k, v := range data {
+			err := w.Put(k, v)
+			require.NoError(b, err)
+		}
+	}
+	b.StopTimer()
 }
